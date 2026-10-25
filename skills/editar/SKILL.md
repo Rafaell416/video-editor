@@ -21,10 +21,20 @@ Lee ./perfil.md y ./brand-sheet.md. Formato = $0 si lo dieron, si no el del perf
    panel de navegador. Resume en 3 líneas: duración antes/después, qué quitaste, gancho.
 6. ESPERA. No sigas hasta que la persona escriba "aprobado" o pida cambios.
    Si pide cambios → aplica en edl.json y vuelve al paso 5.
-7. node scripts/render.mjs edl.json --borrador. Di dónde quedó y que lo vea en el teléfono.
+7. node scripts/render.mjs edl.json --borrador. Di dónde quedó y sugiere la vía más
+   simple para verlo en el teléfono según el sistema: AirDrop en Mac, o "mándatelo
+   por WhatsApp" en Windows.
 8. ESPERA "aprobado". Entonces node scripts/render.mjs edl.json --final.
 9. Cierra: "Listo: exportados/prueba-02_v1.mp4. Si quieres cambiar algo, dímelo
    como se lo dirías a un editor. Para el próximo video abre una sesión nueva."
 
 Nunca muestres el comando ffmpeg salvo que falle. Si un script falla, muestra la
 última línea del error en una frase y ofrece /video-editor diagnostico.
+
+## Cómo interpretar la respuesta al storyboard
+- Aprobación: "aprobado", "dale", "listo", "me gusta", "perfecto", "sí" → continuar.
+- Cambio: cualquier frase que mencione un segmento, tiempo, pausa, toma, gancho,
+  título → aplicar al EDL (solo lo que menciona), regenerar storyboard, volver a
+  esperar.
+- Ambiguo ("mmm", "no sé") → pregunta: "¿Lo renderizo así o quieres cambiar algo?".
+- Nunca interpretes silencio como aprobación.
