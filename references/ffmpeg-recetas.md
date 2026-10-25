@@ -88,6 +88,36 @@ proporcional al ancho del video sin tener que calcular píxeles a mano.
 superponen antes que los subtítulos (quedan por debajo) para que el texto
 nunca se tape.
 
+## B-roll: reemplazar la imagen (y el audio) en una ventana
+
+```
+[2:v]trim=start=1.0:duration=3.0,setpts=PTS-STARTPTS+8.0/TB,
+     crop='min(iw,ih*1080/1920)':'min(ih,iw*1920/1080)':'(iw-(…))/2':'(ih-(…))/2',
+     scale=1080:1920[brollv]
+[vprevio][brollv]overlay=0:0:enable='between(t,8.0,11.5)'[vbroll]
+
+[2:a]atrim=start=1.0:duration=3.0,asetpts=PTS-STARTPTS,adelay=8000:all=1[broll_a]
+[avoz]volume=0:enable='between(t,8.0,11.5)'[avoz_duck]
+[avoz_duck][broll_a]amix=inputs=2:duration=first[amix]
+```
+
+Mismo truco que el logo (`overlay`+`enable`), pero a pantalla completa y con
+el mismo recorte-a-relación-de-aspecto que usa el video principal, para que
+un B-roll horizontal no salga estirado en un resultado vertical.
+
+**Para el video, `setpts=PTS-STARTPTS+N/TB` sí alinea correctamente** dentro
+de un `overlay` (los dos inputs del mismo filtro se sincronizan por PTS).
+**Para el audio, NO**: se probó con un tono de prueba y sonaba desde el
+segundo 0 del video entero, ignorando el desplazamiento — `amix` no confía
+en el PTS reescrito por `asetpts` para alinear sus inputs. La forma que sí
+funciona es `adelay` (inserta silencio de verdad, en milisegundos, antes del
+audio) antes de meterlo a `amix`.
+
+Nota: el `volume=0:enable=...` que silencia la voz dentro de la ventana deja
+un clic de ~50 ms justo en el borde (la transición no cae alineada a un
+límite de frame de audio). Es del mismo orden que los cortes duros que ya
+hace `concat` en cada segmento eliminado, así que no se trató como bug.
+
 ## Música con ducking
 
 ```

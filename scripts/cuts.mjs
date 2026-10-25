@@ -299,6 +299,8 @@ const edl = {
   musica: { archivo: null, volumen: 0.15, ducking: true },
   zooms: [],
   imagenes: [],
+  fuentes_extra: {},
+  broll: [],
   lower_third: null,
 };
 

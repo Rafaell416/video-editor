@@ -9,7 +9,9 @@ model: sonnet
 
 Lee ./perfil.md y ./brand-sheet.md. Formato = $0 si lo dieron, si no el del perfil.
 
-1. Elige el archivo: $ARGUMENTS, o el más reciente de material-crudo/ si no lo dijeron.
+1. Elige el archivo: $ARGUMENTS, o el más reciente de material-crudo/ si no lo
+   dijeron. Si hay varios videos ahí y no está claro cuál es el principal
+   (podría haber B-roll de una edición anterior), pregunta en vez de adivinar.
    Confirma en una frase: "Voy a editar prueba-02.mov (3:12)".
 2. node scripts/probe.mjs <archivo> → si el formato detectado no coincide con el
    del perfil, pregunta (ver references/formatos.md).

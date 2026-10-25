@@ -3,7 +3,8 @@
 Esta carpeta la administra el plugin video-editor. Reglas:
 
 ## Carpetas
-- material-crudo/ → originales. NUNCA modificar, mover ni borrar.
+- material-crudo/ → originales. NUNCA modificar, mover ni borrar. Puede tener
+  más de un video (el principal y, si la persona lo pide, B-roll).
 - exportados/ → toda salida, versionada: nombre_v1.mp4, nombre_v2.mp4, nombre_borrador.mp4
 - .trabajo/ → archivos intermedios. Se pueden regenerar.
 - musica/, referencias/, fuentes/ e imagenes/ → solo se usan si la persona lo pide o lo dejó ahí.

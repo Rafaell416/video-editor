@@ -1,7 +1,7 @@
 ---
 name: ajustar
 user-invocable: false
-description: Aplica un cambio puntual a la última edición (subtítulos, música, gancho, cortes, zooms, logo, fuente, duración) sin rehacer todo. Úsalo cuando la persona pida cambiar, subir, bajar, quitar, mover o agregar algo a un video ya editado.
+description: Aplica un cambio puntual a la última edición (subtítulos, música, gancho, cortes, zooms, logo, fuente, B-roll, duración) sin rehacer todo. Úsalo cuando la persona pida cambiar, subir, bajar, quitar, mover o agregar algo a un video ya editado.
 allowed-tools: Bash(node ${CLAUDE_PLUGIN_ROOT}/scripts/*)
 model: sonnet
 ---
@@ -37,6 +37,14 @@ Mapa de peticiones → cambio:
   primero; si no está, descárgala con scripts/fonts.mjs); actualiza
   brand-sheet.md con el nombre REAL que te dé el script, no el que escribió
   la persona
+- "pon B-roll de X en el minuto Y" / "muéstrame cocinando ahí" → busca el
+  video en material-crudo/ (el B-roll es otro archivo crudo, no uno
+  especial); si no dijo cuál, pregunta. Agrega un alias en
+  edl.fuentes_extra y un elemento en edl.broll (ver references/edl-schema.md
+  para los campos: "in" + "duracion", nunca "out"). Si no dijo si debe
+  sonar el B-roll o seguir la voz, usa audio:"original" (la voz sigue; es
+  el caso normal de un B-roll) y dilo en una frase al mostrar el borrador.
+- "quita el B-roll" → edl.broll = [] (deja fuentes_extra, no hace daño)
 
 Flujo: aplica el cambio en el EDL (o brand-sheet.md) → render.mjs --borrador
 → "Listo, míralo. ¿Lo dejo así?" → con "aprobado" render --final (nueva

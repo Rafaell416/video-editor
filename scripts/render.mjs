@@ -136,6 +136,7 @@ kept.forEach((s, i) => {
 });
 const entradasConcat = kept.map((_, i) => `[v${i}][a${i}]`).join('');
 filtros.push(`${entradasConcat}concat=n=${kept.length}:v=1:a=1[vcat][acat]`);
+let labelA = 'acat';
 
 // 2) recorte a la relación de salida (centrado, o anclado si modo="cara") + scale
 const ancho = edl.salida?.ancho || 1080;
@@ -159,6 +160,58 @@ if (zooms.length) {
     `[${labelV}]zoompan=z='1+(${terminos})':d=1:x='iw/2-(iw/zoom/2)':y='ih/2-(ih/zoom/2)':s=${ancho}x${alto}:fps=${fps}[vzoom]`,
   );
   labelV = 'vzoom';
+}
+
+// 3.5) B-roll: reemplaza la imagen (y según "audio", también el sonido)
+// durante una ventana del resultado, sin tocar cortes ni subtítulos. Se
+// recorta a la misma relación de aspecto que la salida (misma fórmula que
+// el video principal) y se desplaza con setpts para caer en el instante
+// correcto del RESULTADO; luego se superpone a pantalla completa con
+// overlay + enable, igual técnica que las imágenes pero a tamaño completo.
+const broll = Array.isArray(edl.broll) ? edl.broll : [];
+const fuentesExtra = edl.fuentes_extra || {};
+for (const b of broll) {
+  const rutaBroll = fuentesExtra[b.fuente];
+  if (!rutaBroll || !fs.existsSync(rutaBroll)) {
+    console.error(`B-roll no encontrado, se omite: ${b.fuente || '(sin fuente)'} → ${rutaBroll || ''}`);
+    continue;
+  }
+  const idx = siguienteInputIndex++;
+  inputs.push('-i', rutaBroll);
+  const desde = b.desde ?? 0;
+  const duracion = b.duracion ?? 1;
+  // "in" + duración (no "in"/"out") fija cuánto del B-roll se usa: evita que
+  // el recorte de fuente y la ventana del resultado puedan contradecirse.
+  const vLabel = `broll${idx}v`;
+  const overlayLabel = `vbroll${idx}`;
+  filtros.push(
+    `[${idx}:v]trim=start=${b.in}:duration=${duracion},setpts=PTS-STARTPTS+${desde}/TB,` +
+      `crop='${cropW}':'${cropH}':'(iw-(${cropW}))/2':'(ih-(${cropH}))/2',scale=${ancho}:${alto}[${vLabel}]`,
+  );
+  filtros.push(`[${labelV}][${vLabel}]overlay=0:0:enable='between(t,${desde},${desde + duracion})'[${overlayLabel}]`);
+  labelV = overlayLabel;
+
+  const modoAudio = b.audio || 'original';
+  if (modoAudio !== 'original') {
+    // Silencia la voz solo en esa ventana (el resto del track sigue igual).
+    const aDucked = `abroll${idx}duck`;
+    filtros.push(`[${labelA}]volume=0:enable='between(t,${desde},${desde + duracion})'[${aDucked}]`);
+    labelA = aDucked;
+    if (modoAudio === 'broll') {
+      // amix NO alinea por PTS: un asetpts no mueve de verdad el audio en la
+      // mezcla (se probó — el tono sonaba desde el segundo 0, no desde
+      // "desde"). adelay sí inserta silencio real antes del audio.
+      const aBrollLabel = `abroll${idx}`;
+      const aMixLabel = `abroll${idx}mix`;
+      const retrasoMs = Math.round(desde * 1000);
+      filtros.push(
+        `[${idx}:a]atrim=start=${b.in}:duration=${duracion},asetpts=PTS-STARTPTS,` +
+          `adelay=${retrasoMs}:all=1[${aBrollLabel}]`,
+      );
+      filtros.push(`[${labelA}][${aBrollLabel}]amix=inputs=2:duration=first[${aMixLabel}]`);
+      labelA = aMixLabel;
+    }
+  }
 }
 
 // 4) título y lower-third: drawtext con caja semitransparente
@@ -255,7 +308,6 @@ if (fs.existsSync(subsPath)) {
 }
 
 // 6) música con ducking (si hay pista y existe el archivo)
-let labelA = 'acat';
 if (edl.musica?.archivo && fs.existsSync(edl.musica.archivo)) {
   const idxMusica = siguienteInputIndex++;
   inputs.push('-stream_loop', '-1', '-i', edl.musica.archivo);
@@ -263,11 +315,11 @@ if (edl.musica?.archivo && fs.existsSync(edl.musica.archivo)) {
   filtros.push(`[${idxMusica}:a]volume=${volumen},atrim=duration=${duracionResultado}[musica]`);
   if (edl.musica.ducking) {
     filtros.push(
-      `[musica][acat]sidechaincompress=threshold=0.05:ratio=8:attack=50:release=400[musicaducked]`,
+      `[musica][${labelA}]sidechaincompress=threshold=0.05:ratio=8:attack=50:release=400[musicaducked]`,
     );
-    filtros.push(`[acat][musicaducked]amix=inputs=2:duration=first:weights=1 1[amix]`);
+    filtros.push(`[${labelA}][musicaducked]amix=inputs=2:duration=first:weights=1 1[amix]`);
   } else {
-    filtros.push(`[acat][musica]amix=inputs=2:duration=first[amix]`);
+    filtros.push(`[${labelA}][musica]amix=inputs=2:duration=first[amix]`);
   }
   filtros.push(`[amix]afade=t=out:st=${Math.max(0, duracionResultado - 1)}:d=1[afin]`);
   labelA = 'afin';
