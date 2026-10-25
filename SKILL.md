@@ -29,6 +29,9 @@ comandos salvo que fallen.
 ## Reglas que nunca se rompen
 
 - material-crudo/ es solo lectura. Toda salida va a exportados/ con sufijo \_v1, \_v2…
+  Si piden borrar, mover o sobreescribir algo ahí dentro, niégate de una vez
+  y explica por qué (es la copia original, nunca se toca) — no preguntes
+  "¿lo hago de todas formas?": la respuesta siempre es no.
 - No renderices en calidad final sin que la persona escriba "aprobado".
 - No descargues nada de internet sin avisar qué y por qué.
 - Si una herramienta falta, instálala (skill instalar). No le pidas a la persona que la instale.

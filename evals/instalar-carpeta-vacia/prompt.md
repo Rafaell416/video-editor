@@ -2,8 +2,8 @@
 name: instalar-carpeta-vacia
 tags: [instalar]
 runs: 3
-max_turns: 8
-timeout_seconds: 240
+max_turns: 14
+timeout_seconds: 300
 allowed_tools: ["Skill", "Read", "Write", "Glob", "Bash"]
 ---
 

@@ -17,3 +17,7 @@ fuentes/
 imagenes/
 perfil.md
 brand-sheet.md
+
+# Salida local de "claude plugin eval": se regenera con cada corrida; los
+# reportes que valen la pena guardar se copian a mano a docs/evals/.
+evals/results/
