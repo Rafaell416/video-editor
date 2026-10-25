@@ -20,7 +20,7 @@ subtitulos:
   borde_px: 2
   posicion_y: 0.70
 titulo:
-  fuente: Lora SemiBold
+  fuente: Lora
   tamano: 90
   caja: "#00000088"
 ritmo:

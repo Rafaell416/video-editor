@@ -110,6 +110,12 @@ if (kept.length === 0) {
 const filtros = [];
 let duracionResultado = 0;
 
+// Lista de inputs de ffmpeg: 0 es siempre edl.fuente; imágenes y música se
+// agregan más abajo y cada una reserva su propio índice con
+// siguienteInputIndex, en el orden en que de verdad se van a usar.
+const inputs = ['-i', edl.fuente];
+let siguienteInputIndex = 1;
+
 // 1) trim por segmento + concat
 const etiquetasV = [];
 const etiquetasA = [];
@@ -189,6 +195,50 @@ if (edl.lower_third?.texto) {
   });
 }
 
+// 4.5) imágenes superpuestas (logo, foto, gráfico fijo): se escalan según
+// el ancho del video con scale2ref, y se superponen solo en su ventana de
+// tiempo. Van antes de los subtítulos para que el texto quede siempre
+// encima y legible.
+function posicionImagen(nombre) {
+  const MARGEN = 40;
+  switch (nombre) {
+    case 'arriba-izq':
+      return [`${MARGEN}`, `${MARGEN}`];
+    case 'abajo-izq':
+      return [`${MARGEN}`, `main_h-overlay_h-${MARGEN}`];
+    case 'abajo-der':
+      return [`main_w-overlay_w-${MARGEN}`, `main_h-overlay_h-${MARGEN}`];
+    case 'centro':
+      return ['(main_w-overlay_w)/2', '(main_h-overlay_h)/2'];
+    case 'arriba-der':
+    default:
+      return [`main_w-overlay_w-${MARGEN}`, `${MARGEN}`];
+  }
+}
+
+const imagenes = Array.isArray(edl.imagenes) ? edl.imagenes : [];
+for (const img of imagenes) {
+  if (!img.archivo || !fs.existsSync(img.archivo)) {
+    console.error(`Imagen no encontrada, se omite: ${img.archivo}`);
+    continue;
+  }
+  const idx = siguienteInputIndex++;
+  inputs.push('-i', img.archivo);
+  const ancho = img.ancho ?? 0.25;
+  const [x, y] = posicionImagen(img.posicion);
+  const escaladaLabel = `img${idx}esc`;
+  const pasoLabel = `img${idx}paso`;
+  const overlayLabel = `img${idx}ov`;
+  // scale2ref: [a escalar][referencia]scale2ref=...[escalada][referencia_intacta]
+  filtros.push(`[${idx}:v][${labelV}]scale2ref=w='main_w*${ancho}':h=-1[${escaladaLabel}][${pasoLabel}]`);
+  const desde = img.en ?? 0;
+  const hasta = desde + (img.duracion ?? duracionResultado);
+  filtros.push(
+    `[${pasoLabel}][${escaladaLabel}]overlay=${x}:${y}:enable='between(t,${desde},${hasta})'[${overlayLabel}]`,
+  );
+  labelV = overlayLabel;
+}
+
 // 5) subtítulos
 if (fs.existsSync(subsPath)) {
   const subsEsc = subsPath.replace(/\\/g, '/').replace(/:/g, '\\:');
@@ -198,11 +248,11 @@ if (fs.existsSync(subsPath)) {
 
 // 6) música con ducking (si hay pista y existe el archivo)
 let labelA = 'acat';
-const inputs = ['-i', edl.fuente];
 if (edl.musica?.archivo && fs.existsSync(edl.musica.archivo)) {
+  const idxMusica = siguienteInputIndex++;
   inputs.push('-stream_loop', '-1', '-i', edl.musica.archivo);
   const volumen = edl.musica.volumen ?? 0.15;
-  filtros.push(`[1:a]volume=${volumen},atrim=duration=${duracionResultado}[musica]`);
+  filtros.push(`[${idxMusica}:a]volume=${volumen},atrim=duration=${duracionResultado}[musica]`);
   if (edl.musica.ducking) {
     filtros.push(
       `[musica][acat]sidechaincompress=threshold=0.05:ratio=8:attack=50:release=400[musicaducked]`,

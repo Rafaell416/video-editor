@@ -56,6 +56,38 @@ trae** (lo deja fuera a propósito); hay que instalar `ffmpeg-full` en su
 lugar. `scripts/lib/paths.mjs` ya detecta esto solo y usa el binario
 correcto si existe.
 
+**Qué nombre poner en `Fontname` de un Style ASS**, confirmado probando
+(no es teoría de la spec): libass, al escanear `fontsdir`, empareja por el
+**nameID 1** de la tabla `name` del archivo (el "family name" clásico, p.
+ej. `"Inter Black"`), NO por el nameID 16 (la "familia tipográfica
+preferida", que para ese mismo archivo es solo `"Inter"`). Si se usa el 16,
+el peso no se encuentra y cae en silencio a una fuente del sistema, sin
+error. `scripts/lib/fonts.mjs` ya lee el nameID 1 correcto; usa
+`nombreAssDeFuente()` de `scripts/lib/brand.mjs`, nunca el string crudo del
+brand sheet.
+
+Además: en una fuente **variable** (un solo archivo con varios pesos vía la
+tabla `fvar`), libass solo ve el nameID 1 de la instancia por defecto —
+nombres de instancia con peso como `"Lora Bold"` no existen como family
+aparte y tampoco se encuentran. Por eso `scripts/fonts.mjs` prefiere siempre
+descargar un archivo estático por peso (p. ej. `Poppins-Black.ttf`) en vez
+de confiar en una instancia con nombre de una fuente variable.
+
+## Logos e imágenes superpuestas
+
+```
+[1:v][vcrop]scale2ref=w='main_w*0.2':h=-1[logo][vcrop2]
+[vcrop2][logo]overlay=main_w-overlay_w-40:40:enable='between(t,0.5,3.5)'[vimg]
+```
+
+`scale2ref` escala el PRIMER input tomando el SEGUNDO como referencia (de
+ahí `main_w` dentro de la expresión de ancho); da dos salidas, la imagen ya
+escalada y el video de referencia intacto, en ese orden. Así el logo queda
+proporcional al ancho del video sin tener que calcular píxeles a mano.
+`overlay` superpone respetando el canal alfa del PNG. Las imágenes se
+superponen antes que los subtítulos (quedan por debajo) para que el texto
+nunca se tape.
+
 ## Música con ducking
 
 ```

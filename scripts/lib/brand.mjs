@@ -9,30 +9,38 @@
 import fs from 'node:fs';
 import path from 'node:path';
 import { fileURLToPath } from 'node:url';
+import { resolverFuentePorNombre } from './fonts.mjs';
 
 export const FONTS_DIR = path.join(path.dirname(fileURLToPath(import.meta.url)), '..', '..', 'templates', 'fonts');
 
-// Nombre de familia (como se escribe en un brand sheet) → archivo real en
-// templates/fonts/. Lora es una sola fuente variable: todos sus pesos viven
-// en el mismo archivo, libass/drawtext elige la instancia por nombre.
-const MAPA_FUENTES = {
-  archivoblack: 'ArchivoBlack-Regular.ttf',
-  bebasneue: 'BebasNeue-Regular.ttf',
-  interblack: 'Inter-Black.ttf',
-  inter: 'Inter-Black.ttf',
-  lora: 'Lora-Regular.ttf',
-  loraregular: 'Lora-Regular.ttf',
-  lorabold: 'Lora-Regular.ttf',
-  lorasemibold: 'Lora-Regular.ttf',
-  loramedium: 'Lora-Regular.ttf',
-};
+// Carpeta de fuentes propias del alumno (relativa a donde corre la skill,
+// igual que musica/ o material-crudo/), por si el nombre no está entre las
+// que vienen con el plugin. Va primero: una fuente propia puede pisar a una
+// del plugin si tienen el mismo nombre de familia.
+export const CARPETA_FUENTES_ALUMNO = 'fuentes';
 
+function carpetasDeBusqueda() {
+  return [CARPETA_FUENTES_ALUMNO, FONTS_DIR];
+}
+
+// Busca un archivo de fuente real por nombre de familia (leyendo la tabla
+// "name" del propio archivo, ver scripts/lib/fonts.mjs) en fuentes/ y en
+// templates/fonts/. Devuelve la ruta del archivo, para usar con
+// drawtext=fontfile=… (no necesita fontconfig ni nombre exacto del sistema).
 export function rutaFuente(nombre) {
-  const clave = String(nombre || '').toLowerCase().replace(/[\s-]/g, '');
-  const archivo = MAPA_FUENTES[clave];
-  if (!archivo) return null;
-  const ruta = path.join(FONTS_DIR, archivo);
-  return fs.existsSync(ruta) ? ruta : null;
+  const encontrada = resolverFuentePorNombre(nombre, carpetasDeBusqueda());
+  return encontrada ? encontrada.archivo : null;
+}
+
+// El nombre que hay que poner en el Style de un .ass para que libass la
+// encuentre vía fontsdir: el de la propia fuente (nameID 1, que es lo que
+// libass usa para buscar, NO necesariamente lo que escribió el brand sheet
+// si alguien se equivocó al escribirlo). Si no se encuentra el archivo,
+// devuelve el nombre tal cual — para fuentes instaladas en el sistema
+// (p. ej. "Arial Black") que nunca estuvieron en nuestras carpetas.
+export function nombreAssDeFuente(nombre) {
+  const encontrada = resolverFuentePorNombre(nombre, carpetasDeBusqueda());
+  return encontrada ? encontrada.familia : nombre;
 }
 
 export const VALORES_POR_DEFECTO = {

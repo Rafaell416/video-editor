@@ -20,7 +20,7 @@ subtitulos:
   borde_px: 3
   posicion_y: 0.85
 titulo:
-  fuente: Lora Bold
+  fuente: Lora
   tamano: 90
   caja: "#000000AA"
 ritmo:

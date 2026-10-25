@@ -298,6 +298,7 @@ const edl = {
   subtitulos: { estilo: 'brand-sheet' },
   musica: { archivo: null, volumen: 0.15, ducking: true },
   zooms: [],
+  imagenes: [],
   lower_third: null,
 };
 

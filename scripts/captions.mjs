@@ -9,7 +9,7 @@
 
 import fs from 'node:fs';
 import path from 'node:path';
-import { leerBrandSheet, hexWebAAss } from './lib/brand.mjs';
+import { leerBrandSheet, hexWebAAss, nombreAssDeFuente } from './lib/brand.mjs';
 
 function parseArgs(argv) {
   const args = { edlPath: null, palabrasPath: null, brand: 'brand-sheet.md', out: null };
@@ -41,7 +41,11 @@ const outFile = args.out || path.join(path.dirname(args.edlPath), 'subs.ass');
 
 const brand = leerBrandSheet(args.brand);
 const estilo = {
-  fuente: brand.subtitulos.fuente,
+  // nombreAssDeFuente() usa el nombre real que libass puede encontrar vía
+  // fontsdir (nameID 1 del propio archivo), no lo que esté escrito en el
+  // brand sheet — así un error de tipeo o un peso que no existe como
+  // archivo aparte no cae en silencio a una fuente del sistema.
+  fuente: nombreAssDeFuente(brand.subtitulos.fuente),
   tamano: brand.subtitulos.tamano,
   color: hexWebAAss(brand.subtitulos.color),
   colorAcento: hexWebAAss(brand.subtitulos.acento),

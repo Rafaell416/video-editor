@@ -39,16 +39,28 @@ la app de Claude, y continuar con /video-editor.
 ## 5. Carpetas
 
 Si la carpeta actual está vacía o solo tiene videos sueltos: crea material-crudo/,
-referencias/, musica/, exportados/, .trabajo/. Si hay videos sueltos, pregunta:
-"Veo 3 videos aquí. ¿Los muevo a material-crudo?".
+referencias/, musica/, fuentes/, imagenes/, exportados/, .trabajo/. Si hay
+videos sueltos, pregunta: "Veo 3 videos aquí. ¿Los muevo a material-crudo?".
 Copia ${CLAUDE_PLUGIN_ROOT}/templates/CLAUDE.md a ./CLAUDE.md si no existe.
 Instala el hook de protección en ./.claude/settings.json (merge).
+
+fuentes/ es para que la persona deje sus propias tipografías (descargadas o
+copiadas de Google Fonts); normalmente queda vacía hasta que use :estilo.
+imagenes/ es para logos, fotos u otros gráficos que quiera superponer en sus
+videos (campo "imagenes" del EDL); también queda vacía hasta que la use.
 
 ## 6. Perfil
 
 Haz las 5 preguntas de una en una (ver templates/perfil.md). Escribe ./perfil.md.
-Copia el estilo base del nicho a ./brand-sheet.md con una nota arriba:
-"Estilo inicial. Para hacerlo tuyo pide: 'aprende mi estilo de estos videos'".
+Copia el estilo base del nicho a ./brand-sheet.md: busca
+${CLAUDE_PLUGIN_ROOT}/templates/estilos/<nicho>.md (en minúsculas, sin tildes
+ni espacios). Si existe, cópialo con una nota arriba: "Estilo inicial. Para
+hacerlo tuyo pide: 'aprende mi estilo de estos videos'". Si el nicho no
+coincide con ninguno de los estilos base (gimnasio, nutricion, belleza, coach,
+restaurante), no inventes uno: copia ${CLAUDE_PLUGIN_ROOT}/templates/brand-sheet.md
+(el genérico) y dilo así: "Todavía no tengo un estilo armado para
+'{{nicho}}', así que arrancas con uno neutro. Cuando quieras, dime 'aprende mi
+estilo de estos videos' o descríbemelo y lo ajusto".
 
 ## 7. Cierre
 
