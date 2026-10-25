@@ -12,76 +12,20 @@ import { spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import os from 'node:os';
 import path from 'node:path';
+import {
+  system,
+  LOCALAPPDATA,
+  HOME,
+  findExecutable,
+  candidatesFor,
+  whisperCandidates,
+  modelosDir,
+  runVersion,
+  findFfmpeg,
+  ffmpegTieneSubtitulos,
+} from './lib/paths.mjs';
 
 const asJson = process.argv.includes('--json');
-
-// ---------------------------------------------------------------------------
-// Sistema
-// ---------------------------------------------------------------------------
-
-function detectSystem() {
-  const platform = process.platform;
-  const osName = platform === 'darwin' ? 'mac' : platform === 'win32' ? 'windows' : 'linux';
-  const shell =
-    osName === 'windows'
-      ? process.env.PSModulePath ? 'powershell' : 'cmd'
-      : process.env.SHELL || 'sh';
-  return { os: osName, arch: process.arch, shell };
-}
-
-const system = detectSystem();
-const LOCALAPPDATA = process.env.LOCALAPPDATA || '';
-const HOME = os.homedir();
-
-// ---------------------------------------------------------------------------
-// Búsqueda de ejecutables: PATH primero, luego rutas típicas por sistema
-// (cubre el caso de que winget/brew acaben de instalar algo y la PATH del
-// proceso actual todavía no se haya refrescado).
-// ---------------------------------------------------------------------------
-
-function whichOnPath(name) {
-  const cmd = system.os === 'windows' ? 'where' : 'which';
-  const res = spawnSync(cmd, [name], { encoding: 'utf8' });
-  if (res.status === 0 && res.stdout) {
-    const first = res.stdout.split(/\r?\n/).map((l) => l.trim()).filter(Boolean)[0];
-    if (first) return first;
-  }
-  return null;
-}
-
-function findExecutable(name, extraCandidates = []) {
-  const fromPath = whichOnPath(name);
-  if (fromPath) return { path: fromPath, origen: 'PATH' };
-  for (const candidate of extraCandidates) {
-    if (candidate && fs.existsSync(candidate)) {
-      return { path: candidate, origen: 'ruta conocida' };
-    }
-  }
-  return null;
-}
-
-function candidatesFor(name) {
-  const exe = system.os === 'windows' ? `${name}.exe` : name;
-  if (system.os === 'mac') {
-    return [`/opt/homebrew/bin/${exe}`, `/usr/local/bin/${exe}`];
-  }
-  if (system.os === 'windows') {
-    return [
-      LOCALAPPDATA ? path.join(LOCALAPPDATA, 'Microsoft', 'WinGet', 'Links', exe) : null,
-      'C:\\Program Files\\Git\\bin\\git.exe',
-    ];
-  }
-  return [`/usr/local/bin/${exe}`, `/usr/bin/${exe}`];
-}
-
-function runVersion(execPath, args = ['--version']) {
-  // Algunas versiones de ffmpeg/whisper-cli devuelven un código de salida
-  // distinto de 0 incluso cuando sí imprimieron la versión; por eso no se
-  // filtra por status, solo se toma la primera línea con contenido.
-  const res = spawnSync(execPath, args, { encoding: 'utf8', timeout: 10_000 });
-  const out = `${res.stdout || ''}${res.stderr || ''}`.trim();
-  return out.split(/\r?\n/).find((l) => l.trim()) || null;
-}
 
 // ---------------------------------------------------------------------------
 // Carpeta temporal y clip de prueba (testsrc + sine) para probar ffmpeg,
@@ -105,17 +49,24 @@ function cleanupTmp() {
 // ---------------------------------------------------------------------------
 
 function checkFfmpeg() {
-  const found = findExecutable('ffmpeg', candidatesFor('ffmpeg'));
+  const found = findFfmpeg();
   const resultado = {
     found: Boolean(found),
     version: null,
     path: found?.path || null,
+    subtitulos: found ? ffmpegTieneSubtitulos(found.path) : false,
     ok: false,
     test: { descripcion: 'generar un clip de prueba de 2 s (video + audio sintéticos)', paso: false, detalle: null },
   };
   if (!found) {
     resultado.test.detalle = 'ffmpeg no está instalado';
     return resultado;
+  }
+  if (!resultado.subtitulos) {
+    resultado.test.detalle =
+      system.os === 'mac'
+        ? 'este ffmpeg no quema subtítulos (falta libass); instala ffmpeg-full'
+        : 'este ffmpeg no quema subtítulos (falta libass)';
   }
   resultado.version = runVersion(found.path);
 
@@ -134,7 +85,7 @@ function checkFfmpeg() {
   );
   const clipListo = gen.status === 0 && fs.existsSync(testClip) && fs.statSync(testClip).size > 0;
   resultado.test.paso = clipListo;
-  resultado.ok = clipListo;
+  resultado.ok = clipListo && resultado.subtitulos;
   if (!clipListo) resultado.test.detalle = (gen.stderr || 'no se generó el clip de prueba').trim().split(/\r?\n/).pop();
   return resultado;
 }
@@ -179,20 +130,8 @@ function checkFfprobe(ffmpegOk) {
 // whisper (whisper.cpp) + modelo
 // ---------------------------------------------------------------------------
 
-function modelosDir() {
-  if (process.env.VIDEO_EDITOR_MODELOS_DIR) return process.env.VIDEO_EDITOR_MODELOS_DIR;
-  if (system.os === 'windows') return path.join(LOCALAPPDATA, 'video-editor', 'modelos');
-  return path.join(HOME, '.video-editor', 'modelos');
-}
-
 function checkWhisper(ffmpegOk) {
-  const nombreBin = system.os === 'windows' ? 'whisper-cli.exe' : 'whisper-cli';
-  const candidatosWhisper =
-    system.os === 'windows'
-      ? [LOCALAPPDATA ? path.join(LOCALAPPDATA, 'video-editor', 'whisper', nombreBin) : null]
-      : ['/opt/homebrew/bin/whisper-cli', '/usr/local/bin/whisper-cli'];
-
-  const found = findExecutable('whisper-cli', candidatosWhisper);
+  const found = findExecutable('whisper-cli', whisperCandidates());
   const dirModelos = modelosDir();
   const modeloSmall = path.join(dirModelos, 'ggml-small.bin');
   const modeloLarge = path.join(dirModelos, 'ggml-large-v3-turbo.bin');
@@ -288,7 +227,7 @@ function comandosInstalacion() {
   return {
     mac: {
       homebrew: '/bin/bash -c "$(curl -fsSL https://raw.githubusercontent.com/Homebrew/install/HEAD/install.sh)"',
-      ffmpeg: 'brew install ffmpeg',
+      ffmpeg: 'brew install ffmpeg-full', // el ffmpeg normal de Homebrew no trae libass (subtítulos)
       whisper: 'brew install whisper.cpp',
       node: 'brew install node',
       ytdlp: 'brew install yt-dlp',

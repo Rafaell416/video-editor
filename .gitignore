@@ -5,3 +5,13 @@ tests/**/*.mkv
 tests/**/*.webm
 node_modules/
 .DS_Store
+
+# Carpetas que el plugin crea dentro del proyecto del alumno (y que este
+# repo también genera al probar los scripts a mano): nunca van al repo.
+.trabajo/
+exportados/
+material-crudo/
+referencias/
+musica/
+perfil.md
+brand-sheet.md
