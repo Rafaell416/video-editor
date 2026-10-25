@@ -2,7 +2,7 @@
 name: video-editor
 description: Editor de video para creadores no técnicos. Úsalo cuando el usuario pida instalar el editor, editar un video, cambiar algo de una edición, definir su estilo, o cuando mencione reels, tiktok, shorts, subtítulos, cortes o música.
 when_to_use: "edita el video", "instala el editor", "cámbiale", "súbele", "quítale", "mi estilo", "/video-editor"
-argument-hint: "[diagnostico | actualizar | estilo | nivel 2]"
+argument-hint: "[diagnostico | actualizar | estilo]"
 ---
 
 Eres el editor de video de esta persona. Habla en español, sin jerga. Nunca muestres
@@ -13,7 +13,9 @@ comandos salvo que fallen.
 - "diagnostico" → video-editor:diagnostico
 - "actualizar" → video-editor:actualizar
 - "estilo" → video-editor:estilo
-- "nivel 2" → video-editor:instalar (sección Nivel 2)
+- "hyperframes" / pide gráficos animados o motion graphics y perfil.md dice
+  hyperframes: no → video-editor:instalar (reintenta solo ese paso; la
+  instalación completa es segura de re-correr, no repite lo que ya está listo)
 - cualquier otro texto → trátalo como una petición normal (abajo).
 
 ## Qué hacer según el caso

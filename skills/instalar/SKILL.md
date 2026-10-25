@@ -34,9 +34,25 @@ instalación vuelve a correr check.mjs y confirma ✓ antes de seguir.
 Si check.mjs sigue sin encontrar algo recién instalado, pide cerrar y abrir
 la app de Claude, y continuar con /video-editor.
 
-## 4. Continúa con la parte 2 (carpetas y perfil) — ver más abajo.
+## 4. HyperFrames (gráficos animados)
 
-## 5. Carpetas
+Es parte de la instalación base, como ffmpeg o whisper: no esperes a que lo
+pidan. Explica en dos frases qué agrega (títulos y subtítulos animados,
+gráficos) y que necesita Chrome.
+
+1. Si no hay git, instálalo primero (brew/winget, igual que las demás herramientas).
+2. Instala el plugin oficial:
+   claude plugin marketplace add heygen-com/hyperframes
+   claude plugin install hyperframes@hyperframes
+3. Verifica que /hyperframes responda. Anota en perfil.md: hyperframes: si.
+4. Si algo falla (no hay Chrome, el plugin no instala, etc.), no insistas
+   más de dos veces: anota hyperframes: no en perfil.md y sigue con el
+   resto. No bloquea nada: el editor funciona igual sin esto, :editar
+   simplemente no ofrecerá animación si no está disponible.
+
+## 5. Continúa con la parte 2 (carpetas y perfil) — ver más abajo.
+
+## 6. Carpetas
 
 Si la carpeta actual está vacía o solo tiene videos sueltos: crea material-crudo/,
 referencias/, musica/, fuentes/, imagenes/, exportados/, .trabajo/. Si hay
@@ -49,7 +65,7 @@ copiadas de Google Fonts); normalmente queda vacía hasta que use :estilo.
 imagenes/ es para logos, fotos u otros gráficos que quiera superponer en sus
 videos (campo "imagenes" del EDL); también queda vacía hasta que la use.
 
-## 6. Perfil
+## 7. Perfil
 
 Haz las 5 preguntas de una en una (ver templates/perfil.md). Escribe ./perfil.md.
 Copia el estilo base del nicho a ./brand-sheet.md: busca
@@ -62,27 +78,8 @@ restaurante), no inventes uno: copia ${CLAUDE_PLUGIN_ROOT}/templates/brand-sheet
 '{{nicho}}', así que arrancas con uno neutro. Cuando quieras, dime 'aprende mi
 estilo de estos videos' o descríbemelo y lo ajusto".
 
-## 7. Cierre
+## 8. Cierre
 
 Di exactamente esto, adaptado al nombre:
 "Listo, {{nombre}}. Deja tu video en la carpeta material-crudo y escríbeme:
 edita el video que acabo de dejar. Te muestro un borrador antes de terminar."
-
-## 8. Nivel 2 (opcional): HyperFrames
-
-Solo si la persona pide "gráficos animados", "motion graphics", "texto
-animado" o "nivel 2" (nunca lo ofrezcas sin que lo pidan: es el 20 % de los
-casos y el 80 % de los problemas de instalación).
-
-1. Explica en dos frases qué agrega (títulos y subtítulos animados,
-   gráficos) y qué requiere (Chrome, ~10 min de instalación).
-2. Si no hay git, instálalo primero (brew/winget, igual que las demás
-   herramientas).
-3. Instala el plugin oficial:
-   claude plugin marketplace add heygen-com/hyperframes
-   claude plugin install hyperframes@hyperframes
-4. Verifica que /hyperframes responda.
-5. Anota en perfil.md: nivel: 2.
-
-No es parte de la instalación base y nunca bloquea nada de lo demás: si
-falla, el resto del editor sigue funcionando igual (nivel 1).
