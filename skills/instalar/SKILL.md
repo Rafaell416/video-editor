@@ -35,3 +35,23 @@ Si check.mjs sigue sin encontrar algo recién instalado, pide cerrar y abrir
 la app de Claude, y continuar con /video-editor.
 
 ## 4. Continúa con la parte 2 (carpetas y perfil) — ver más abajo.
+
+## 5. Carpetas
+
+Si la carpeta actual está vacía o solo tiene videos sueltos: crea material-crudo/,
+referencias/, musica/, exportados/, .trabajo/. Si hay videos sueltos, pregunta:
+"Veo 3 videos aquí. ¿Los muevo a material-crudo?".
+Copia ${CLAUDE_PLUGIN_ROOT}/templates/CLAUDE.md a ./CLAUDE.md si no existe.
+Instala el hook de protección en ./.claude/settings.json (merge).
+
+## 6. Perfil
+
+Haz las 5 preguntas de una en una (ver templates/perfil.md). Escribe ./perfil.md.
+Copia el estilo base del nicho a ./brand-sheet.md con una nota arriba:
+"Estilo inicial. Para hacerlo tuyo pide: 'aprende mi estilo de estos videos'".
+
+## 7. Cierre
+
+Di exactamente esto, adaptado al nombre:
+"Listo, {{nombre}}. Deja tu video en la carpeta material-crudo y escríbeme:
+edita el video que acabo de dejar. Te muestro un borrador antes de terminar."

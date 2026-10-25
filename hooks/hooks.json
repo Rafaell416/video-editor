@@ -1,4 +1,15 @@
 {
-  "$comment": "Hooks del plugin: eventos de Claude Code que disparan scripts (pendiente de definir).",
-  "hooks": {}
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "node \"${CLAUDE_PLUGIN_ROOT}/scripts/guard.mjs\""
+          }
+        ]
+      }
+    ]
+  }
 }
