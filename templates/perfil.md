@@ -9,4 +9,5 @@ musica_por_defecto: si | no
 idioma_subtitulos: es
 umbral_silencio_s: 0.5
 respiro_s: 0.15
+nivel: 1                   # 2 = instaló HyperFrames (gráficos animados, opcional)
 creado: {{fecha}}

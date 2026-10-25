@@ -13,8 +13,10 @@ Lee ./perfil.md y ./brand-sheet.md. Formato = $0 si lo dieron, si no el del perf
    dijeron. Si hay varios videos ahí y no está claro cuál es el principal
    (podría haber B-roll de una edición anterior), pregunta en vez de adivinar.
    Confirma en una frase: "Voy a editar prueba-02.mov (3:12)".
-2. node scripts/probe.mjs <archivo> → si el formato detectado no coincide con el
-   del perfil, pregunta (ver references/formatos.md).
+2. node scripts/probe.mjs <archivo> → si "confianza" < 0.7, o el formato
+   detectado no coincide con el del perfil, pregunta (ver references/formatos.md)
+   en vez de seguir. Si el formato no es "yap" (el único con motor de corte
+   propio hoy), dilo y pregunta cómo seguir: no lo fuerces por el camino de yap.
 3. node scripts/transcribe.mjs <archivo> --frames
 4. node scripts/cuts.mjs → edl.json. Lee la transcripción y el EDL. Ajusta SOLO:
    pausas que parezcan intencionales, repeticiones que sean énfasis, y el texto del
@@ -26,9 +28,16 @@ Lee ./perfil.md y ./brand-sheet.md. Formato = $0 si lo dieron, si no el del perf
 7. node scripts/render.mjs edl.json --borrador. Di dónde quedó y sugiere la vía más
    simple para verlo en el teléfono según el sistema: AirDrop en Mac, o "mándatelo
    por WhatsApp" en Windows.
-8. ESPERA "aprobado". Entonces node scripts/render.mjs edl.json --final.
-9. Cierra: "Listo: exportados/prueba-02_v1.mp4. Si quieres cambiar algo, dímelo
-   como se lo dirías a un editor. Para el próximo video abre una sesión nueva."
+8. Si perfil.nivel == 2 (instaló HyperFrames), ofrece: "¿Quieres el título y
+   los subtítulos animados?". Si sí, usa las skills de HyperFrames
+   (embedded-captions y motion-graphics) SOBRE el borrador ya cortado, nunca
+   sobre material-crudo: tu motor ya resolvió cortes y audio, HyperFrames
+   solo agrega capas visuales encima. Guarda el resultado como una versión
+   más. Si no tiene nivel 2, no menciones esta opción.
+9. ESPERA "aprobado". Entonces node scripts/render.mjs edl.json --final (o,
+   si se usó HyperFrames en el paso 8, la versión final sale de ahí).
+10. Cierra: "Listo: exportados/prueba-02_v1.mp4. Si quieres cambiar algo, dímelo
+    como se lo dirías a un editor. Para el próximo video abre una sesión nueva."
 
 Nunca muestres el comando ffmpeg salvo que falle. Si un script falla, muestra la
 última línea del error en una frase y ofrece /video-editor diagnostico.

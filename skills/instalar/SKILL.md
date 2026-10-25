@@ -67,3 +67,22 @@ estilo de estos videos' o descríbemelo y lo ajusto".
 Di exactamente esto, adaptado al nombre:
 "Listo, {{nombre}}. Deja tu video en la carpeta material-crudo y escríbeme:
 edita el video que acabo de dejar. Te muestro un borrador antes de terminar."
+
+## 8. Nivel 2 (opcional): HyperFrames
+
+Solo si la persona pide "gráficos animados", "motion graphics", "texto
+animado" o "nivel 2" (nunca lo ofrezcas sin que lo pidan: es el 20 % de los
+casos y el 80 % de los problemas de instalación).
+
+1. Explica en dos frases qué agrega (títulos y subtítulos animados,
+   gráficos) y qué requiere (Chrome, ~10 min de instalación).
+2. Si no hay git, instálalo primero (brew/winget, igual que las demás
+   herramientas).
+3. Instala el plugin oficial:
+   claude plugin marketplace add heygen-com/hyperframes
+   claude plugin install hyperframes@hyperframes
+4. Verifica que /hyperframes responda.
+5. Anota en perfil.md: nivel: 2.
+
+No es parte de la instalación base y nunca bloquea nada de lo demás: si
+falla, el resto del editor sigue funcionando igual (nivel 1).
