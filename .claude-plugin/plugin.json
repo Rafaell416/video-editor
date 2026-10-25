@@ -1,0 +1,6 @@
+{
+  "name": "video-editor",
+  "description": "Edita tus videos hablando en español: cortes, subtítulos, música y gancho. Para Reels, TikTok y Shorts.",
+  "version": "0.1.0",
+  "author": { "name": "Rafa Villarreal" }
+}

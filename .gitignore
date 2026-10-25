@@ -1,0 +1,7 @@
+# Videos de prueba (no se suben al repo)
+tests/**/*.mp4
+tests/**/*.mov
+tests/**/*.mkv
+tests/**/*.webm
+node_modules/
+.DS_Store

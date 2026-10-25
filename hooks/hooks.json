@@ -1,0 +1,4 @@
+{
+  "$comment": "Hooks del plugin: eventos de Claude Code que disparan scripts (pendiente de definir).",
+  "hooks": {}
+}
