@@ -1,0 +1,8 @@
+# NOTA: el formato exacto de "context.scaffold_script" no se pudo verificar
+# contra documentación oficial (ver references/plugin-eval-notas.md) — este
+# archivo es mi mejor intento según `claude plugin eval init --bare`, se
+# corrige en la primera corrida real si hace falta.
+schema_version: "1.1"
+name: edita-video-mas-reciente
+context:
+  scaffold_script: ./scaffold.sh
