@@ -1,6 +1,9 @@
 // Convierte un EDL en un solo comando ffmpeg y produce el video en
 // exportados/. Nunca escribe fuera de exportados/ y .trabajo/, y nunca usa
-// -y sobre material-crudo.
+// -y sobre material-crudo. El borrador siempre se sobreescribe
+// (<nombre>_borrador.mp4); un final nunca: cada uno queda como
+// <nombre>_v{N}.mp4 junto con el EDL exacto que lo produjo
+// (<nombre>_v{N}.edl.json), para poder volver a una versión anterior.
 //
 // Uso:
 //   node scripts/render.mjs <edl.json> --borrador
@@ -37,8 +40,12 @@ if (!args.edlPath || !args.modo) {
 }
 
 const edl = JSON.parse(fs.readFileSync(args.edlPath, 'utf8'));
-const dirTrabajo = path.dirname(args.edlPath);
-const nombre = path.basename(dirTrabajo);
+// nombre y dirTrabajo salen del "fuente" del EDL, NO de dónde vive el
+// archivo edl.json: así renderizar desde una copia guardada en exportados/
+// (p. ej. para volver a una versión anterior) sigue encontrando
+// palabras.json/subs.ass en su carpeta .trabajo/ de siempre.
+const nombre = path.basename(edl.fuente, path.extname(edl.fuente));
+const dirTrabajo = path.join('.trabajo', nombre);
 
 if (!fs.existsSync(edl.fuente)) {
   console.error(`No encuentro el video fuente: ${edl.fuente}`);
@@ -84,10 +91,11 @@ function siguienteVersion() {
   return versiones.length ? Math.max(...versiones) + 1 : 1;
 }
 
+const version = args.modo === 'final' ? siguienteVersion() : null;
 const salidaPath =
   args.modo === 'borrador'
     ? path.join(exportadosDir, `${nombre}_borrador.mp4`)
-    : path.join(exportadosDir, `${nombre}_v${siguienteVersion()}.mp4`);
+    : path.join(exportadosDir, `${nombre}_v${version}.mp4`);
 
 if (path.resolve(edl.fuente).startsWith(path.resolve('material-crudo'))) {
   if (path.resolve(salidaPath) === path.resolve(edl.fuente)) {
@@ -320,6 +328,13 @@ proceso.on('close', (code) => {
     console.error('ffmpeg no pudo terminar el render.');
     console.error(stderrCompleto.trim().split(/\r?\n/).slice(-15).join('\n'));
     process.exit(1);
+  }
+  // Cada versión final guarda al lado el EDL exacto que la produjo, para
+  // poder volver a una versión anterior ("la v1 estaba mejor") sin adivinar
+  // qué edl.json tenía en ese momento — el de .trabajo/ se sigue editando.
+  if (args.modo === 'final' && !args.muestra) {
+    const edlCopiaPath = path.join(exportadosDir, `${nombre}_v${version}.edl.json`);
+    fs.writeFileSync(edlCopiaPath, JSON.stringify(edl, null, 2));
   }
   console.error(`Listo: ${salidaPath}`);
   console.log(salidaPath);
