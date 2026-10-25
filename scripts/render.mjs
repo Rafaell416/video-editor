@@ -5,18 +5,26 @@
 // Uso:
 //   node scripts/render.mjs <edl.json> --borrador
 //   node scripts/render.mjs <edl.json> --final
+//   node scripts/render.mjs <edl.json> --borrador --muestra 10   (solo los primeros N s)
+//   node scripts/render.mjs <edl.json> --borrador --brand <ruta> (brand sheet distinto al de la carpeta)
 //
+// El título y los subtítulos leen su tipografía, tamaño y color de
+// brand-sheet.md (sección "## Valores"); ver scripts/lib/brand.mjs.
 // Las recetas de cada filtro están documentadas en references/ffmpeg-recetas.md.
 
 import { spawn, spawnSync } from 'node:child_process';
 import fs from 'node:fs';
 import path from 'node:path';
 import { findFfmpeg } from './lib/paths.mjs';
+import { leerBrandSheet, hexWebAFfmpeg, FONTS_DIR, rutaFuente } from './lib/brand.mjs';
 
 function parseArgs(argv) {
-  const args = { edlPath: null, modo: null };
-  for (const a of argv) {
+  const args = { edlPath: null, modo: null, muestra: null, brand: 'brand-sheet.md' };
+  for (let i = 0; i < argv.length; i++) {
+    const a = argv[i];
     if (a === '--borrador' || a === '--final') args.modo = a.slice(2);
+    else if (a === '--muestra') args.muestra = Number(argv[++i]);
+    else if (a === '--brand') args.brand = argv[++i];
     else if (!args.edlPath) args.edlPath = a;
   }
   return args;
@@ -51,7 +59,11 @@ const palabrasPath = path.join(dirTrabajo, 'palabras.json');
 const subsPath = path.join(dirTrabajo, 'subs.ass');
 if (fs.existsSync(palabrasPath)) {
   const captionsScript = path.join(path.dirname(new URL(import.meta.url).pathname), 'captions.mjs');
-  const res = spawnSync('node', [captionsScript, args.edlPath, palabrasPath, '--out', subsPath], { encoding: 'utf8' });
+  const res = spawnSync(
+    'node',
+    [captionsScript, args.edlPath, palabrasPath, '--brand', args.brand, '--out', subsPath],
+    { encoding: 'utf8' },
+  );
   if (res.status !== 0) console.error((res.stderr || '').trim());
 }
 
@@ -147,27 +159,40 @@ const FUENTE_SISTEMA =
       ? 'C:\\Windows\\Fonts\\arialbd.ttf'
       : '/usr/share/fonts/truetype/dejavu/DejaVuSans-Bold.ttf';
 
-function drawtext(label, texto, desde, hasta, y) {
+function drawtext(label, texto, desde, hasta, y, { fontFile, fontSize, boxColor }) {
   const salidaLabel = `${label}t`;
   filtros.push(
-    `[${label}]drawtext=fontfile='${FUENTE_SISTEMA}':text='${escaparDrawtext(texto)}':fontsize=64:fontcolor=white:` +
-      `box=1:boxcolor=black@0.5:boxborderw=20:x=(w-text_w)/2:y=${y}:enable='between(t,${desde},${hasta})'[${salidaLabel}]`,
+    `[${label}]drawtext=fontfile='${fontFile}':text='${escaparDrawtext(texto)}':fontsize=${fontSize}:fontcolor=white:` +
+      `box=1:boxcolor=${boxColor}:boxborderw=20:x=(w-text_w)/2:y=${y}:enable='between(t,${desde},${hasta})'[${salidaLabel}]`,
   );
   return salidaLabel;
 }
 
+// El título lee su tipografía, tamaño y caja del brand sheet (sección
+// "## Valores" → titulo.*); el lower-third usa valores fijos porque el
+// esquema del brand sheet no lo define.
+const brand = leerBrandSheet(args.brand);
+const fuenteTitulo = rutaFuente(brand.titulo.fuente) || FUENTE_SISTEMA;
+
 if (edl.titulo?.texto) {
-  labelV = drawtext(labelV, edl.titulo.texto, edl.titulo.desde, edl.titulo.hasta, 'h*0.12');
+  labelV = drawtext(labelV, edl.titulo.texto, edl.titulo.desde, edl.titulo.hasta, 'h*0.12', {
+    fontFile: fuenteTitulo,
+    fontSize: brand.titulo.tamano,
+    boxColor: hexWebAFfmpeg(brand.titulo.caja),
+  });
 }
 if (edl.lower_third?.texto) {
-  labelV = drawtext(labelV, edl.lower_third.texto, edl.lower_third.desde, edl.lower_third.hasta, 'h*0.85');
+  labelV = drawtext(labelV, edl.lower_third.texto, edl.lower_third.desde, edl.lower_third.hasta, 'h*0.85', {
+    fontFile: FUENTE_SISTEMA,
+    fontSize: 64,
+    boxColor: 'black@0.5',
+  });
 }
 
 // 5) subtítulos
 if (fs.existsSync(subsPath)) {
-  const fontsDir = path.join(path.dirname(new URL(import.meta.url).pathname), '..', 'templates', 'fonts');
   const subsEsc = subsPath.replace(/\\/g, '/').replace(/:/g, '\\:');
-  filtros.push(`[${labelV}]ass='${subsEsc}':fontsdir='${fontsDir.replace(/\\/g, '/')}'[vsubs]`);
+  filtros.push(`[${labelV}]ass='${subsEsc}':fontsdir='${FONTS_DIR.replace(/\\/g, '/')}'[vsubs]`);
   labelV = 'vsubs';
 }
 
@@ -200,6 +225,10 @@ if (args.modo === 'final') {
 // Comando ffmpeg
 // ---------------------------------------------------------------------------
 
+// --muestra recorta la duración de salida (p. ej. una muestra de 10 s para
+// previsualizar un estilo nuevo); el resto del grafo de filtros no cambia.
+const duracionSalida = args.muestra ? Math.min(args.muestra, duracionResultado) : duracionResultado;
+
 // -t y -map_metadata -1: sin esto, un input de música en loop infinito (o la
 // metadata del propio material-crudo) puede dejar mal la duración del
 // contenedor de salida aunque el stream de video ya esté bien recortado.
@@ -207,7 +236,7 @@ const comun = [
   '-y', ...inputs,
   '-filter_complex', filtros.join(';'),
   '-map', `[${labelV}]`, '-map', `[${labelA}]`,
-  '-t', String(duracionResultado),
+  '-t', String(duracionSalida),
   '-map_metadata', '-1',
 ];
 
@@ -231,7 +260,7 @@ proceso.stderr.on('data', (chunk) => {
   const m = texto.match(/time=(\d+):(\d+):([\d.]+)/);
   if (m) {
     const segundos = Number(m[1]) * 3600 + Number(m[2]) * 60 + Number(m[3]);
-    const pct = Math.min(100, Math.round((segundos / duracionResultado) * 100));
+    const pct = Math.min(100, Math.round((segundos / duracionSalida) * 100));
     console.error(`Renderizando ${args.modo}… ${pct} %`);
   }
 });

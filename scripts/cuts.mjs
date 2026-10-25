@@ -292,7 +292,10 @@ const edl = {
   recorte: { modo: 'cara', anclaX: 0.5 },
   segmentos,
   titulo: { texto: proponerGancho(), desde: 0, hasta: 3 },
-  subtitulos: { modo: 'palabra', estilo: 'brand-sheet' },
+  // Sin "modo": que lo defina el brand sheet del nicho/estilo (captions.mjs
+  // cae a su modo por defecto si no hay brand sheet). Claude puede fijarlo
+  // aquí explícito si la persona pide un modo distinto para este video.
+  subtitulos: { estilo: 'brand-sheet' },
   musica: { archivo: null, volumen: 0.15, ducking: true },
   zooms: [],
   lower_third: null,

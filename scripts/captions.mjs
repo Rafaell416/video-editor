@@ -1,13 +1,15 @@
 // Genera .trabajo/<nombre>/subs.ass a partir del EDL y palabras.json:
 // remapea cada palabra del tiempo FUENTE al tiempo RESULTADO (descontando
 // los segmentos eliminados) y escribe subtítulos en modo "palabra" o
-// "grupo", con el estilo leído de brand-sheet.md (sección "Subtítulos").
+// "grupo", con el estilo leído de brand-sheet.md (sección "## Valores" →
+// subtitulos.*, ver scripts/lib/brand.mjs).
 //
 // Uso:
 //   node scripts/captions.mjs <edl.json> <palabras.json> [--brand <brand-sheet.md>] [--out <subs.ass>]
 
 import fs from 'node:fs';
 import path from 'node:path';
+import { leerBrandSheet, hexWebAAss } from './lib/brand.mjs';
 
 function parseArgs(argv) {
   const args = { edlPath: null, palabrasPath: null, brand: 'brand-sheet.md', out: null };
@@ -33,42 +35,20 @@ const { palabras } = JSON.parse(fs.readFileSync(args.palabrasPath, 'utf8'));
 const outFile = args.out || path.join(path.dirname(args.edlPath), 'subs.ass');
 
 // ---------------------------------------------------------------------------
-// Estilo: brand-sheet.md (sección "Subtítulos", clave: valor) con fallback
-// a fuente gruesa del sistema, blanco, borde negro 4 px.
+// Estilo: sección "## Valores" del brand-sheet.md (ver scripts/lib/brand.mjs
+// para los valores por defecto si no hay brand sheet).
 // ---------------------------------------------------------------------------
 
-function leerEstiloSubtitulos(rutaBrand) {
-  const estilo = {
-    fuente: 'Arial Black',
-    tamano: 68,
-    color: '&H00FFFFFF', // blanco (ASS: &HAABBGGRR)
-    colorAcento: '&H0032A8FC',
-    borde: 4,
-    sombra: 1,
-  };
-  if (!fs.existsSync(rutaBrand)) return estilo;
-  const texto = fs.readFileSync(rutaBrand, 'utf8');
-  const seccion = texto.match(/##\s*Subt[íi]tulos([\s\S]*?)(\n##\s|\s*$)/i);
-  if (!seccion) return estilo;
-  const bloque = seccion[1];
-  const campo = (clave) => bloque.match(new RegExp(`^${clave}:\\s*(.+)$`, 'mi'));
-  const fuente = campo('fuente');
-  const tamano = campo('tamano');
-  const color = campo('color');
-  const colorAcento = campo('color_acento');
-  const borde = campo('borde');
-  const sombra = campo('sombra');
-  if (fuente) estilo.fuente = fuente[1].trim();
-  if (tamano) estilo.tamano = Number(tamano[1].trim());
-  if (color) estilo.color = color[1].trim();
-  if (colorAcento) estilo.colorAcento = colorAcento[1].trim();
-  if (borde) estilo.borde = Number(borde[1].trim());
-  if (sombra) estilo.sombra = Number(sombra[1].trim());
-  return estilo;
-}
-
-const brandPath = args.brand;
-const estilo = leerEstiloSubtitulos(brandPath);
+const brand = leerBrandSheet(args.brand);
+const estilo = {
+  fuente: brand.subtitulos.fuente,
+  tamano: brand.subtitulos.tamano,
+  color: hexWebAAss(brand.subtitulos.color),
+  colorAcento: hexWebAAss(brand.subtitulos.acento),
+  borde: hexWebAAss(brand.subtitulos.borde),
+  bordePx: brand.subtitulos.borde_px,
+  posicionY: brand.subtitulos.posicion_y,
+};
 
 // ---------------------------------------------------------------------------
 // Remapeo de tiempos: FUENTE → RESULTADO, usando los segmentos mantener=true
@@ -125,7 +105,9 @@ function escaparTexto(t) {
 
 const ancho = edl.salida?.ancho || 1080;
 const alto = edl.salida?.alto || 1920;
-const margenZonaSegura = Math.round(alto * 0.20); // 20 % de la altura, para Instagram/TikTok
+// posicion_y es la fracción de la altura donde va el texto (0 = arriba); en ASS
+// con Alignment=2 (abajo-centro) el margen se mide desde el borde inferior.
+const margenV = Math.round(alto * (1 - estilo.posicionY));
 
 function colorDePalabra(texto) {
   return /\d/.test(texto) ? estilo.colorAcento : estilo.color;
@@ -140,13 +122,15 @@ ScaledBorderAndShadow: yes
 
 [V4+ Styles]
 Format: Name, Fontname, Fontsize, PrimaryColour, SecondaryColour, OutlineColour, BackColour, Bold, Italic, Underline, StrikeOut, ScaleX, ScaleY, Spacing, Angle, BorderStyle, Outline, Shadow, Alignment, MarginL, MarginR, MarginV, Encoding
-Style: Palabra,${estilo.fuente},${estilo.tamano},${estilo.color},${estilo.colorAcento},&H00000000,&H00000000,1,0,0,0,100,100,0,0,1,${estilo.borde},${estilo.sombra},2,40,40,${margenZonaSegura},1
+Style: Palabra,${estilo.fuente},${estilo.tamano},${estilo.color},${estilo.colorAcento},${estilo.borde},&H00000000,1,0,0,0,100,100,0,0,1,${estilo.bordePx},1,2,40,40,${margenV},1
 
 [Events]
 Format: Layer, Start, End, Style, Name, MarginL, MarginR, MarginV, Effect, Text
 `;
 
-const modo = edl.subtitulos?.modo === 'grupo' ? 'grupo' : 'palabra';
+// El EDL puede traer un modo explícito (Claude lo ajustó durante la revisión);
+// si no, manda el modo definido en el brand sheet del nicho/estilo.
+const modo = (edl.subtitulos?.modo || brand.subtitulos.modo) === 'grupo' ? 'grupo' : 'palabra';
 const eventos = [];
 
 if (modo === 'palabra') {
